@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import argparse
 from pathlib import Path
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 from datetime import datetime, timezone
 import sys
 
