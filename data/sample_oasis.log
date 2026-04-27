@@ -1,0 +1,15 @@
+2025-01-08T10:00:00Z INFO: Mission OASIS-1 initialization
+2025-01-08T10:10:00Z INFO: Satellite tracking started
+enter command window @ 2025-01-08T10:15:30Z sat=SAT-1 gw=HSINCHU
+2025-01-08T10:16:00Z DEBUG: Uplink established
+2025-01-08T10:20:00Z DEBUG: Command sequence transmitted
+exit command window @ 2025-01-08T10:25:45Z sat=SAT-1 gw=HSINCHU
+2025-01-08T10:30:00Z INFO: Data link window scheduled
+X-band data link window: 2025-01-08T11:00:00Z..2025-01-08T11:08:30Z sat=SAT-1 gw=TAIPEI
+2025-01-08T11:45:00Z INFO: Satellite SAT-2 approaching
+enter command window @ 2025-01-08T12:00:00Z sat=SAT-2 gw=TAICHUNG
+2025-01-08T12:05:00Z DEBUG: TLE updated
+exit command window @ 2025-01-08T12:10:00Z sat=SAT-2 gw=TAICHUNG
+2025-01-08T12:30:00Z INFO: X-band link scheduled
+X-band data link window: 2025-01-08T13:00:00Z..2025-01-08T13:15:00Z sat=SAT-2 gw=HSINCHU
+2025-01-08T13:30:00Z INFO: Mission complete
