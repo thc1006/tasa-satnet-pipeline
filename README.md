@@ -1,14 +1,64 @@
 # TASA SatNet Pipeline
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-348%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-31%2F31%20adapter%20%2B%20348%20core-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-53.46%25-yellow)](htmlcov/)
-[![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)](.)
-[![Docker](https://img.shields.io/badge/docker-585MB%20verified-blue)](Dockerfile)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![v2](https://img.shields.io/badge/v2-Hypatia%20packet--level%20metrics-success)](docs/internal/v2-feasibility.md)
+[![B5G LEO](https://img.shields.io/badge/Taiwan%20B5G%20LEO-aligned-orange)](#-taiwan-b5g-leo-對齊)
 
-**OASIS to NS-3/SNS3 衛星通聯管線自動化工具**
+**OASIS to NS-3/SNS3 衛星通聯管線自動化工具，含 Hypatia packet-level 模擬整合**
 
-將 OASIS 衛星任務規劃系統產生的通聯日誌，自動轉換為 NS-3/SNS3 網路模擬器場景，並計算關鍵效能指標（KPI）與波束排程。
+將 OASIS 衛星任務規劃系統產生的通聯日誌，自動轉換為 NS-3/SNS3 網路模擬器場景，並計算關鍵效能指標（KPI）與波束排程。**v2** 進一步整合 Hypatia ns-3 模擬器，提供真實 packet-level 延遲與吞吐量量測（取代 v1 的物理公式）。
+
+---
+
+## v2 (2026-04) — Hypatia 整合 + Taiwan B5G LEO 對齊
+
+> **v2 ship 重點**：本版加入 `scripts/adapters/{from_hypatia,to_satgenpy}.py` 兩個轉接器，把 TASA 管線的 windows JSON ↔ satgenpy 網路狀態目錄 ↔ Hypatia ns-3 packet metric CSV 三方串通；`scripts/metrics.py --use-hypatia <run_dir>` 旗標讓使用者能用真實 packet-level 數據取代 v1 的物理公式 KPI。共 35 個紅綠 TDD 循環，0 AI 署名 commit。**對未對應使用者，v1 行為完全不變**。
+
+### v2 三條最常見的使用路徑
+
+```bash
+# 1. v1 路徑（物理公式 KPI，<1 秒，不需 Hypatia）— 最快回饋
+make all   # parse → scenario → metrics → schedule
+
+# 2. v2 路徑（真 packet-level KPI，需要 docker/hypatia-ns3.Dockerfile 一次性 build）
+docker build -f docker/hypatia.Dockerfile     -t tasa-hypatia-base:dev   docker/
+docker build -f docker/hypatia-ns3.Dockerfile -t tasa-hypatia-ns3:dev    docker/
+bash docker/run-hypatia-sim.sh /tmp/hypatia-real-run
+python scripts/metrics.py config/ns3_scenario.json \
+    --use-hypatia /tmp/hypatia-real-run/udp_variant_17_to_18 \
+    -o reports/v2_metrics.csv --skip-validation
+
+# 3. K8s 路徑（cluster 已驗）— 6 秒 e2e
+kubectl apply -f k8s/namespace.yaml -f k8s/configmap.yaml -f k8s/job-test-real.yaml
+kubectl logs -n tasa-satnet job/tasa-test-pipeline -f
+```
+
+### v2 新增的 contract 文件
+- [`docs/internal/v2-feasibility.md`](docs/internal/v2-feasibility.md) — Hypatia I/O contract、cost numbers、refactor recommendations
+- [`docker/README.md`](docker/README.md) — `tasa-hypatia-base` (969 MB) 與 `tasa-hypatia-ns3` (5.92 GB) 兩個 dev image 的角色說明
+- [`tests/fixtures/hypatia_samples/README.md`](tests/fixtures/hypatia_samples/README.md) — 80 KB 從上游 paper-replication archive 抽出的 schema oracle
+
+---
+
+## Taiwan B5G LEO 對齊
+
+> 本專案在 GitHub 上是少數明確對應 **TASA Beyond-5G LEO Satellite** 計畫公開規格的開源管線，鎖定 1A pathfinder（CesiumAstro Vireo Ka payload，~600 km 軌道，44–50° 傾角，2027 launch）與 1B 國產化 baseband module（YTTEK，2030 launch）。`config/` 之中規劃保留 `taiwan_b5g.yaml` 作為 v2.1 的對齊 vehicle（**仍在規劃中，並非 TASA 官方背書**）。
+
+### 為何走 TASA 對齊路線
+- **TASA 製造產業化平台招標**（2025-08）NT$23.57 億由 Compal + Wistron 拿下，明確列出 **「satellite body simulation, payload-body integration platform, end-to-end system testing」**——這是本專案的 gravity well
+- **MOE B5G NTN 跨層教育聯盟** 是學界 on-ramp（[proj.moe.edu.tw/B5GMOE](https://proj.moe.edu.tw/B5GMOE/)）
+- **Formosat-8A 已於 2025-11-29 升空**，TASA 進入 active flight ops mode
+- **Industrialization Platform 中無公開模擬工具開源**——這個 niche 的開源覆蓋率為零
+
+### 不是什麼
+- 本專案 **未受 TASA 官方授權或背書**——資訊來自公開新聞稿與招標文件
+- 本專案 **未連接任何真實 OASIS log 來源**（只有解析格式）
+- 本專案 **不模擬通聯安全層**（射頻加密、TT&C 認證等）
+
+詳細見 [`docs/internal/v2-feasibility.md`](docs/internal/v2-feasibility.md) §C 與相關 commit message。
 
 ---
 
@@ -26,7 +76,7 @@
 - **指標計算器**: ✓ 運行正常，計算延遲與吞吐量（**注意：為物理公式計算值**）
 - **視覺化功能**: ✓ **完全正常**，4種視覺化全部生成（coverage_map, interactive_map, timeline, performance_charts）
 - **排程器**: ✓ 運行正常，100% 排程成功率
-- **Docker 部署**: ✓ **已構建並測試**，映像大小 585MB，容器運行正常
+- **Docker 部署**: ✓ **已構建並測試**，映像大小 833MB，容器運行正常
 - **完整管線執行時間**: **0.241 秒** (4 個視窗，Parse+Scenario+Metrics+Scheduler 完整管線，實測)
 
 ### [✓] 測試結果（實際測量）
@@ -95,7 +145,7 @@
 - [✓] **視覺化生成**：覆蓋地圖、互動式地圖、時間軸、效能圖表（**4 種全部驗證**）
 
 ### 部署特性
-- [✓] **Docker 容器化**：**已構建並測試**，映像大小 585MB，多階段構建優化
+- [✓] **Docker 容器化**：**已構建並測試**，映像大小 833MB，多階段構建優化
 - [!] **K8s 編排**：YAML 配置完整（**集群未運行，未實際部署**）
 - [✓] **超快執行**：**0.241 秒完整管線**（4 視窗，Parse+Scenario+Metrics+Scheduler）
 - [✓] **高效能**：Parser ~53 w/s，Scenario ~58 w/s，Metrics ~69 w/s，Scheduler ~103 w/s
@@ -268,10 +318,12 @@ python scripts/parse_oasis_log.py data/empty.log \
 
 | 星座 | 衛星數 | 頻段 | 優先級 | 處理延遲 |
 |------|--------|------|--------|----------|
-| **GPS** | 45 | L-band | High | 2.0ms |
-| **Starlink** | 100+ | Ka-band | Medium | 5.0ms |
-| **OneWeb** | 12+ | Ku-band | Medium | 8.0ms |
-| **Iridium NEXT** | 18+ | Ka-band | Medium | 10.0ms |
+| **GPS** | 45 | L-band | high | 2.0ms |
+| **Iridium NEXT** | 18+ | Ka-band | medium | 8.0ms |
+| **Starlink** | 100+ | Ka-band | low | 5.0ms |
+| **OneWeb** | 12+ | Ku-band | low | 6.0ms |
+
+> 優先級值取自 `scripts/multi_constellation.py:PRIORITY_LEVELS`；先前版本的 README 把 Starlink / OneWeb 寫為 medium 是與程式碼不一致的錯誤，已對齊。處理延遲取自 `config/constants.py:CONSTELLATION_PROCESSING_DELAYS`。
 
 ### 功能特點
 
@@ -649,7 +701,7 @@ chore: 雜項更新
 **進階功能（完全驗證）:**
 - [✓] **多星座支援**: GPS/Starlink/OneWeb/Iridium，34 個測試通過，頻段管理完整
 - [✓] **視覺化生成**: Coverage Map, Interactive HTML, Timeline, Performance Charts 全部驗證
-- [✓] **Docker 容器化**: 已構建 (585MB)，多階段優化，healthcheck 通過
+- [✓] **Docker 容器化**: 已構建 (833MB)，多階段優化，healthcheck 通過
 - [✓] **測試覆蓋率**: 53.46% 整體，核心模組 91%+ (實際測量 pytest-cov)
 
 **測試統計（實測）:**
@@ -717,7 +769,7 @@ K8s: 配置存在但集群未運行
 
 ## [授權] 授權
 
-本專案採用 MIT 授權條款。
+本專案採用 **Apache License 2.0** 授權條款（見 [`LICENSE`](LICENSE)）。
 
 ---
 
