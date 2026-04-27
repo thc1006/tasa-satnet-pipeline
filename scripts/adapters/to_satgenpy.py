@@ -68,12 +68,18 @@ def write_tles_txt(
 
     Format: a header `<n_orbits> <n_sats_per_orbit>` followed by 3 lines per
     satellite (name, TLE line 1, TLE line 2).
+
+    satgenpy's `read_tles.py:53` requires the satellite name to have the
+    shape `<constellation_name> <numeric_id>` (it does `int(name.split()[1])`).
+    To stay compatible, we append a sequential numeric index whenever the
+    caller-supplied name is a single token (i.e. has no whitespace).
     """
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w") as f:
         f.write(f"{n_orbits} {n_sats_per_orbit}\n")
-        for name, line1, line2 in satellites:
-            f.write(f"{name}\n{line1}\n{line2}\n")
+        for idx, (name, line1, line2) in enumerate(satellites):
+            qualified_name = name if " " in name.strip() else f"{name} {idx}"
+            f.write(f"{qualified_name}\n{line1}\n{line2}\n")
 
 
 def write_isls_txt(pairs: Iterable[Tuple[int, int]], out: Path) -> None:

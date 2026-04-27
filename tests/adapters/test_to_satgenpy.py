@@ -106,9 +106,24 @@ class TestTles:
         # First line is "<n_orbits> <n_sats_per_orbit>"
         assert lines[0] == "1 1"
         # Then satellite-name + line1 + line2
-        assert lines[1] == "ISS-ZARYA"
+        # satgen.tles.read_tles requires `<constellation> <numeric_id>` shape:
+        # the parser does `int(name.split()[1])`. We append a numeric index
+        # whenever the caller-supplied name is a single token.
+        assert lines[1] == "ISS-ZARYA 0"
         assert lines[2].startswith("1 ")
         assert lines[3].startswith("2 ")
+
+    def test_satgen_compatible_naming_for_caller_with_space(
+        self, sample_tle_lines, tmp_path
+    ):
+        """If the caller already provided `<name> <index>`, leave it alone."""
+        out = tmp_path / "tles.txt"
+        to_satgenpy.write_tles_txt(
+            satellites=[("Starlink 42", sample_tle_lines[1], sample_tle_lines[2])],
+            n_orbits=1, n_sats_per_orbit=1, out=out,
+        )
+        # Satellite name kept verbatim
+        assert out.read_text().splitlines()[1] == "Starlink 42"
 
 
 # ---------------------------------------------------------------------------
