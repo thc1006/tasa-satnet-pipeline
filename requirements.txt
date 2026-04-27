@@ -30,6 +30,15 @@ ortools==9.6.2534
 # CLI utilities
 click==8.1.3
 
+# Progress bars (used by starlink_batch_processor.py)
+tqdm==4.66.5
+
+# Process / memory introspection (used by starlink_batch_processor.py --track-memory)
+psutil==5.9.8
+
+# Timezone handling (used by parse_oasis_log.py and tle_oasis_bridge.py for non-UTC paths)
+pytz==2024.1
+
 # Logging
 colorlog==6.7.0
 
