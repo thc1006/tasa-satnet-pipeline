@@ -1,0 +1,57 @@
+# Taiwan B5G LEO program — known public parameters (2026-04)
+#
+# This config is consumed by run.sh in the same directory. All values come
+# from the cited public sources; nothing here is privileged information.
+# Update when official TASA / NSPO data becomes available (TLEs after launch,
+# RF link budgets after ITU coordination publishes them).
+#
+# This is config, not commitment: the project is not endorsed by TASA. The
+# orbital elements below are placeholders shaped to match the announced
+# program envelope — they will not predict real Taiwan B5G satellite passes.
+
+mission:
+  name: TASA Beyond-5G LEO Satellite
+  phase: 1A pathfinder (CesiumAstro)
+  source: https://www.tasa.org.tw/en-US/missions/detail/Beyond-5G-LEO-Satellite
+
+constellation:
+  altitude_km: 600           # CesiumAstro 2025-04 announcement
+  inclination_deg: 47        # mid-point of announced 44–50° band
+  satellites_in_phase_1: 4   # Compal/Wistron 4-sat manufacturing contract
+  full_constellation_year: 2031
+
+payload:
+  band: Ka                   # CesiumAstro Vireo Ka on 1A; YTTEK indigenous on 1B
+  vendor_1a: CesiumAstro Vireo
+  vendor_1b: YTTEK SDR baseband
+  source_1a: https://focustaiwan.tw/sci-tech/202504010012
+  source_1b: https://www.manilatimes.net/2026/01/16/tmt-newswire/pr-newswire/yttek-joins-taiwans-national-b5g-leo-satellite-program-accelerating-indigenous-space-communications/2260101
+
+ground_stations_file: ../../data/taiwan_ground_stations.json
+# 6 stations: HSINCHU, TAIPEI, KAOHSIUNG, TAICHUNG, TAINAN, HUALIEN.
+
+simulation:
+  start_utc: '2027-06-01T00:00:00Z'   # rough 1A launch year (program docs)
+  end_utc:   '2027-06-01T03:00:00Z'   # 3h window keeps fixture light
+  step_seconds: 30
+  min_elevation_deg: 10               # standard for Ka-band ground terminals
+
+# Two synthetic TLEs for the 1A 4-sat phase — placeholder NORAD ids 99001 / 99002.
+# Replace with real TLEs from CelesTrak / Space-Track once 1A is on orbit (~2027).
+tles:
+  - name: TASA-B5G-1A-01
+    line1: '1 99001U 27001A   27152.50000000  .00000000  00000-0  00000+0 0    01'
+    line2: '2 99001  47.0000   0.0000 0001000   0.0000   0.0000 14.95000000    02'
+  - name: TASA-B5G-1A-02
+    line1: '1 99002U 27001B   27152.50000000  .00000000  00000-0  00000+0 0    03'
+    line2: '2 99002  47.0000  90.0000 0001000   0.0000   0.0000 14.95000000    04'
+
+# Placeholder for v2 packet-level integration knobs.
+# These match the Hypatia run-config conventions; see
+# docs/internal/v2-feasibility.md §3.1 for the full schema.
+v2_hypatia:
+  enabled: false
+  isl_data_rate_megabit_per_s: 100
+  gsl_data_rate_megabit_per_s: 100
+  isl_max_queue_size_pkts: 100
+  gsl_max_queue_size_pkts: 100
