@@ -44,41 +44,21 @@ fi
 echo "[OK] Image loaded"
 echo ""
 
-# Deploy to K8s
+# Deploy to K8s. Note: this pipeline is batch (Jobs), not a long-running
+# service. There is no Deployment / Service to apply — those manifests were
+# deleted because the container's CMD is a oneshot healthcheck that exits
+# on success, which made restartPolicy: Always loop forever (CrashLoopBackOff).
 echo "Step 4: Deploying to K8s..."
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
 echo "[OK] Base deployment complete"
-echo ""
-
-# Wait for deployment
-echo "Step 5: Waiting for pods..."
-kubectl wait --for=condition=ready pod -l app=tasa-pipeline -n tasa-satnet --timeout=60s || {
-    echo "WARN: Pods not ready yet, continuing..."
-}
-echo ""
-
-# Show status
-echo "=== Deployment Status ==="
-kubectl get all -n tasa-satnet
-echo ""
-
-# Show pod logs
-echo "=== Recent Pod Logs ==="
-POD=$(kubectl get pod -n tasa-satnet -l app=tasa-pipeline -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ ! -z "$POD" ]; then
-    kubectl logs -n tasa-satnet $POD --tail=20 || echo "No logs yet"
-else
-    echo "No pods found yet"
-fi
 echo ""
 
 echo "=== Deployment Complete ==="
 echo ""
 echo -e "\033[36mAvailable Jobs:\033[0m"
-echo "  kubectl apply -f k8s/job-test-real.yaml          # Basic pipeline test"
+echo "  kubectl apply -f k8s/job-parser.yaml             # Parser-only batch run"
+echo "  kubectl apply -f k8s/job-test-real.yaml          # Full pipeline smoke test"
 echo "  kubectl apply -f k8s/job-integrated-pipeline.yaml # Phase 3C integrated test (TLE, Multi-constellation, Viz)"
 echo ""
 echo -e "\033[36mManagement Commands:\033[0m"

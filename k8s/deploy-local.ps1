@@ -51,24 +51,12 @@ if ($context -match "docker-desktop") {
 }
 Write-Host ""
 
-# Deploy to K8s
+# Deploy to K8s. Note: this pipeline is batch (Jobs), not a long-running
+# service. There is no Deployment / Service to apply.
 Write-Host "Step 5: Deploying to K8s..." -ForegroundColor Yellow
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
 Write-Host "[OK] Base deployment complete" -ForegroundColor Green
-Write-Host ""
-
-# Wait for deployment
-Write-Host "Step 6: Waiting for pods..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
-kubectl get pods -n tasa-satnet
-Write-Host ""
-
-# Show status
-Write-Host "=== Deployment Status ===" -ForegroundColor Cyan
-kubectl get all -n tasa-satnet
 Write-Host ""
 
 Write-Host "=== Deployment Complete ===" -ForegroundColor Green

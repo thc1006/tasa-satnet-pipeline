@@ -39,15 +39,14 @@ kubectl apply -f k8s/namespace.yaml
 # Create ConfigMap
 kubectl apply -f k8s/configmap.yaml
 
-# Create PVCs and Deployment
-kubectl apply -f k8s/deployment.yaml
-
-# Create Service
-kubectl apply -f k8s/service.yaml
-
-# Verify deployment
+# Verify
 kubectl get all -n tasa-satnet
 ```
+
+> **Note**: this pipeline is batch (Jobs), not a long-running service. The
+> previously-shipped `deployment.yaml` / `service.yaml` were removed because
+> the container's `CMD` is a one-shot healthcheck that exits 0, which under
+> `restartPolicy: Always` looped forever (CrashLoopBackOff). Run as Jobs.
 
 ### 4. Run Parser Job
 
@@ -62,14 +61,14 @@ kubectl get jobs -n tasa-satnet
 kubectl logs -n tasa-satnet job/tasa-parser-job
 ```
 
-### 5. Run Tests in Kubernetes
+### 5. Run Full Pipeline Smoke Test
 
 ```bash
-# Run tests as a Job
-kubectl apply -f k8s/job-test.yaml
+# End-to-end test (parse → scenario → metrics → scheduler)
+kubectl apply -f k8s/job-test-real.yaml
 
-# Check test results
-kubectl logs -n tasa-satnet job/tasa-test-job -f
+# Watch
+kubectl logs -n tasa-satnet job/tasa-test-pipeline -f
 ```
 
 ## Resource Access
@@ -166,10 +165,9 @@ kubectl get events -n tasa-satnet --sort-by='.lastTimestamp'
 kubectl delete namespace tasa-satnet
 
 # Or delete individually
-kubectl delete -f k8s/job-test.yaml
-kubectl delete -f k8s/job-parser.yaml
-kubectl delete -f k8s/service.yaml
-kubectl delete -f k8s/deployment.yaml
+kubectl delete -f k8s/job-test-real.yaml --ignore-not-found
+kubectl delete -f k8s/job-integrated-pipeline.yaml --ignore-not-found
+kubectl delete -f k8s/job-parser.yaml --ignore-not-found
 kubectl delete -f k8s/configmap.yaml
 kubectl delete -f k8s/namespace.yaml
 ```
