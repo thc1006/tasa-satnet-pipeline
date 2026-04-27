@@ -306,8 +306,76 @@ def main():
     ap.add_argument("--visualize", action="store_true", help="Generate visualization charts and maps")
     ap.add_argument("--viz-output-dir", type=Path, default=Path("reports/viz"),
                    help="Output directory for visualizations (default: reports/viz/)")
+    ap.add_argument(
+        "--use-hypatia",
+        type=Path,
+        metavar="RUN_DIR",
+        default=None,
+        help="Path to a Hypatia ns-3 run directory (containing logs_ns3/). "
+             "When set, derive metrics from real packet-level outputs instead "
+             "of the physics formula. See docs/internal/v2-feasibility.md.",
+    )
 
     args = ap.parse_args()
+
+    # v2: --use-hypatia derives metrics from a real ns-3 run directory.
+    # The scenario JSON is still consumed (mode/topology hints), but
+    # MetricsCalculator's physics formulas are not used.
+    if args.use_hypatia is not None:
+        if not args.use_hypatia.exists():
+            print(
+                f"ERROR: --use-hypatia path does not exist: {args.use_hypatia}",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            from adapters import from_hypatia
+        except ImportError:
+            from scripts.adapters import from_hypatia
+        try:
+            hypatia_metrics = from_hypatia.run_dir_to_tasa_metrics(args.use_hypatia)
+        except from_hypatia.IncompleteRunError as e:
+            print(f"ERROR: hypatia run incomplete: {e}", file=sys.stderr)
+            return 1
+        # Materialize a CSV with throughput_source column flagged 'hypatia'.
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        with args.output.open("w", newline="") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "source", "target", "duration_sec",
+                    "throughput_mbps", "throughput_peak_mbps",
+                    "throughput_source", "delivery_ratio",
+                    "packets_sent", "bytes_sent",
+                ],
+            )
+            writer.writeheader()
+            for m in hypatia_metrics:
+                writer.writerow({
+                    "source": m["source"],
+                    "target": m["target"],
+                    "duration_sec": m["duration_sec"],
+                    "throughput_mbps": m["throughput"]["average_mbps"],
+                    "throughput_peak_mbps": m["throughput"]["peak_mbps"],
+                    "throughput_source": m["throughput"]["source"],
+                    "delivery_ratio": m["throughput"].get("delivery_ratio"),
+                    "packets_sent": m["packets_sent"],
+                    "bytes_sent": m["bytes_sent"],
+                })
+        # Light-weight summary; deliberately skips physics-formula latency.
+        args.summary.parent.mkdir(parents=True, exist_ok=True)
+        args.summary.write_text(json.dumps({
+            "metrics_source": "hypatia",
+            "run_dir": str(args.use_hypatia),
+            "flow_count": len(hypatia_metrics),
+        }, indent=2))
+        print(json.dumps({
+            "metrics_computed": len(hypatia_metrics),
+            "metrics_source": "hypatia",
+            "output_csv": str(args.output),
+            "output_summary": str(args.summary),
+        }, indent=2))
+        return 0
 
     # Load scenario
     with args.scenario.open() as f:
