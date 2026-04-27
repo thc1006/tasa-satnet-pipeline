@@ -8,8 +8,9 @@ from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 
 try:
-    from sgp4.api import Satellite, jday, SGP4_ERRORS
+    from sgp4.api import jday, SGP4_ERRORS
     from sgp4.io import twoline2rv
+    from sgp4.earth_gravity import wgs72
     from sgp4 import exporter
     SGP4_AVAILABLE = True
 except ImportError:
@@ -48,7 +49,7 @@ class TLEProcessor:
         self.satellite_name = satellite_name or self._extract_sat_name()
         
         if SGP4_AVAILABLE:
-            self.satellite = twoline2rv(self.tle_line1, self.tle_line2)
+            self.satellite = twoline2rv(self.tle_line1, self.tle_line2, wgs72)
         else:
             self.satellite = None
     
