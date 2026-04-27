@@ -40,7 +40,9 @@ ENV PATH=/root/.local/bin:$PATH
 # Copy application code
 COPY scripts/ ./scripts/
 COPY config/ ./config/
+COPY tests/ ./tests/
 COPY data/sample_oasis.log ./data/sample_oasis.log
+COPY pytest.ini .
 COPY Makefile .
 
 # Create output directories
