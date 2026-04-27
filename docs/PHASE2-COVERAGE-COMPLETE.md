@@ -1,5 +1,9 @@
 # Phase 2 Coverage Verification Report
 
+> **Historical document** (Phase 2, 2025-10). Some files referenced
+> below (`visualization_backup.py`, `verify_deployment_fixed.py`) were
+> removed in a later cleanup commit. See `git log` for current state.
+
 **Generated:** 2025-10-08
 **Analysis Date:** 2025-10-08
 **Total Test Suites:** 14

@@ -1,5 +1,9 @@
 # Phase 2 Test Execution Summary
 
+> **Historical document** (Phase 2, 2025-10). Some files referenced
+> below (`visualization_backup.py`, `verify_deployment_fixed.py`) were
+> removed in a later cleanup commit. See `git log` for current state.
+
 **Generated:** 2025-10-08
 **Project:** TASA SatNet Pipeline
 **Test Framework:** pytest 7.4.4
