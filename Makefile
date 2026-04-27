@@ -1,6 +1,6 @@
 # TASA SatNet Pipeline - Makefile
 
-.PHONY: help setup test parse scenario metrics schedule clean lint typecheck all
+.PHONY: help setup test parse scenario metrics schedule clean lint typecheck all docker-build docker-run k8s-deploy k8s-clean
 
 # Default target
 help:
@@ -16,6 +16,10 @@ help:
 	@echo "  make typecheck   - Run mypy type checking"
 	@echo "  make clean       - Remove generated files and caches"
 	@echo "  make all         - Run full pipeline (parse -> scenario -> metrics)"
+	@echo "  make docker-build- Build the tasa-satnet-pipeline:latest image"
+	@echo "  make docker-run  - Run the image's healthcheck once"
+	@echo "  make k8s-deploy  - Build, import to containerd, apply ns/configmap/job-test-real"
+	@echo "  make k8s-clean   - Remove k8s resources created by k8s-deploy"
 	@echo ""
 
 # Python and venv settings
@@ -118,6 +122,42 @@ all: parse scenario metrics
 	@echo "  - Windows: $(WINDOWS_JSON)"
 	@echo "  - Scenario: $(SCENARIO_JSON)"
 	@echo "  - Metrics: $(METRICS_CSV)"
+
+# Build Docker image
+docker-build:
+	@echo "Building Docker image..."
+	docker build -t tasa-satnet-pipeline:latest .
+	@docker images tasa-satnet-pipeline:latest
+
+# Run pipeline once in a one-shot container
+docker-run: docker-build
+	docker run --rm tasa-satnet-pipeline:latest python scripts/healthcheck.py
+
+# Deploy job-test-real to current kubectl context.
+# On clusters where the runtime is NOT Docker (e.g. kubeadm + containerd),
+# the image must be present in the cluster's image store. This target handles
+# the common case (containerd k8s.io namespace) by saving and importing.
+# For Docker Desktop / minikube docker-env, this import is a no-op-ish but harmless.
+k8s-deploy: docker-build
+	@echo "Importing image into containerd k8s.io namespace (skipped if no ctr)..."
+	@if command -v ctr >/dev/null 2>&1; then \
+		docker save tasa-satnet-pipeline:latest -o /tmp/tasa-satnet-pipeline.tar; \
+		sudo ctr --namespace=k8s.io images import /tmp/tasa-satnet-pipeline.tar; \
+		rm -f /tmp/tasa-satnet-pipeline.tar; \
+	else \
+		echo "ctr not found; assuming docker-shim or registry handles image distribution"; \
+	fi
+	kubectl apply -f k8s/namespace.yaml
+	kubectl apply -f k8s/configmap.yaml
+	kubectl apply -f k8s/job-test-real.yaml
+	@echo "Deployed. Tail logs with: kubectl logs -n tasa-satnet job/tasa-test-pipeline -f"
+
+# Tear down k8s resources
+k8s-clean:
+	-kubectl delete -f k8s/job-test-real.yaml --ignore-not-found
+	-kubectl delete -f k8s/job-integrated-pipeline.yaml --ignore-not-found
+	-kubectl delete -f k8s/configmap.yaml --ignore-not-found
+	-kubectl delete -f k8s/namespace.yaml --ignore-not-found
 
 # Clean generated files and caches
 clean:
