@@ -1,0 +1,79 @@
+# v2 pipeline demo Job — packet-level metrics via --use-hypatia.
+#
+# Unlike job-test-real (which runs the v1 physics-formula path) and
+# job-integrated-pipeline (which runs the v1 path + visualization), this
+# Job exercises the v2 metrics flag against the *vendored* Hypatia run
+# fixture under tests/fixtures/hypatia_samples/. That fixture is shipped
+# inside the image (Dockerfile COPY tests/) so no external state is needed.
+#
+# This is a smoke test for the v2 contract in cluster context — it does
+# not replace running tasa-hypatia-ns3:dev (a 5.92 GB image with ns-3.31)
+# which is dev-only. For a real packet-level run, see docs/v2-getting-started.md.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tasa-v2-pipeline
+  namespace: tasa-satnet
+  labels:
+    app: tasa-v2
+    component: pipeline-v2
+spec:
+  template:
+    metadata:
+      labels:
+        app: tasa-v2
+    spec:
+      containers:
+      - name: pipeline-v2
+        image: tasa-satnet-pipeline:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args:
+          - "-c"
+          - |
+            set -e
+            echo "=== v2 pipeline demo: --use-hypatia in K8s ==="
+            echo
+
+            echo "Step 1: Parse OASIS log → windows JSON"
+            python scripts/parse_oasis_log.py data/sample_oasis.log -o /tmp/windows.json
+            echo
+
+            echo "Step 2: Generate scenario JSON"
+            python scripts/gen_scenario.py /tmp/windows.json -o /tmp/scenario.json
+            echo
+
+            echo "Step 3: v2 metrics — point --use-hypatia at the vendored Hypatia fixture"
+            python scripts/metrics.py /tmp/scenario.json \
+                --use-hypatia tests/fixtures/hypatia_samples/run_minimal \
+                -o /tmp/metrics_v2.csv \
+                --summary /tmp/summary_v2.json \
+                --skip-validation
+            echo
+
+            echo "=== v2 metrics CSV (first 6 rows) ==="
+            head -6 /tmp/metrics_v2.csv
+            echo
+
+            echo "=== v2 summary JSON ==="
+            cat /tmp/summary_v2.json
+            echo
+
+            echo "=== Verify: Hypatia provenance present ==="
+            grep -c "hypatia" /tmp/metrics_v2.csv
+            echo "(non-zero = throughput_source=hypatia rows present)"
+            echo
+
+            echo "=== v2 PIPELINE DEMO COMPLETE ==="
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      restartPolicy: Never
+  backoffLimit: 1
