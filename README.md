@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/badge/tests-31%2F31%20adapter%20%2B%20348%20core-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-53.46%25-yellow)](htmlcov/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![v2](https://img.shields.io/badge/v2-Hypatia%20packet--level%20metrics-success)](docs/internal/v2-feasibility.md)
+[![v2](https://img.shields.io/badge/v2-Hypatia%20packet--level%20metrics-success)](docs/v2-getting-started.md)
 [![B5G LEO](https://img.shields.io/badge/Taiwan%20B5G%20LEO-aligned-orange)](#-taiwan-b5g-leo-對齊)
 
 **OASIS to NS-3/SNS3 衛星通聯管線自動化工具，含 Hypatia packet-level 模擬整合**
@@ -36,8 +36,9 @@ kubectl apply -f k8s/namespace.yaml -f k8s/configmap.yaml -f k8s/job-test-real.y
 kubectl logs -n tasa-satnet job/tasa-test-pipeline -f
 ```
 
-### v2 新增的 contract 文件
-- [`docs/internal/v2-feasibility.md`](docs/internal/v2-feasibility.md) — Hypatia I/O contract、cost numbers、refactor recommendations
+### v2 新增的文件
+- [`docs/v2-getting-started.md`](docs/v2-getting-started.md) — 五步驟、user-facing 的 v2 quickstart（從 fresh checkout 到第一次 packet-level 測試結果）
+- [`docs/internal/v2-feasibility.md`](docs/internal/v2-feasibility.md) — internal 設計筆記：Hypatia I/O contract、cost numbers、refactor recommendations
 - [`docker/README.md`](docker/README.md) — `tasa-hypatia-base` (969 MB) 與 `tasa-hypatia-ns3` (5.92 GB) 兩個 dev image 的角色說明
 - [`tests/fixtures/hypatia_samples/README.md`](tests/fixtures/hypatia_samples/README.md) — 80 KB 從上游 paper-replication archive 抽出的 schema oracle
 
