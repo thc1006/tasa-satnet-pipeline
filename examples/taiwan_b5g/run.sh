@@ -56,12 +56,32 @@ python3 "${ROOT}/scripts/metrics.py" \
     --skip-validation
 
 echo
-echo "=== Step 5 (optional): v2 packet-level KPIs from a Hypatia run ==="
-echo "  Skipped by default. To exercise:"
-echo "    bash ${ROOT}/docker/run-hypatia-sim.sh /tmp/hypatia-real-run"
-echo "    python3 ${ROOT}/scripts/metrics.py ${OUT}/scenario.json \\"
-echo "        --use-hypatia /tmp/hypatia-real-run/udp_variant_17_to_18 \\"
-echo "        -o ${OUT}/metrics_v2.csv --skip-validation"
+echo "=== Step 5: v2 packet-level KPIs from a Hypatia run ==="
+# Auto-detect: if the v2 ns-3 image exists, run an actual sim and compute
+# v2 metrics. If not, document how to opt in. Either way the example completes.
+if docker image inspect tasa-hypatia-ns3:dev >/dev/null 2>&1; then
+  echo "  tasa-hypatia-ns3:dev image detected — running v2 path"
+  HYPATIA_OUT="${OUT}/hypatia"
+  mkdir -p "${HYPATIA_OUT}"
+  bash "${ROOT}/docker/run-hypatia-sim.sh" "${HYPATIA_OUT}" 2>&1 | tail -8
+  RUN_DIR="${HYPATIA_OUT}/udp_variant_17_to_18"
+  if [ -d "${RUN_DIR}" ] && [ -f "${RUN_DIR}/logs_ns3/finished.txt" ]; then
+    python3 "${ROOT}/scripts/metrics.py" \
+        "${OUT}/scenario.json" \
+        --use-hypatia "${RUN_DIR}" \
+        -o "${OUT}/metrics_v2.csv" \
+        --summary "${OUT}/summary_v2.json" \
+        --skip-validation
+    echo "  v2 metrics: ${OUT}/metrics_v2.csv"
+  else
+    echo "  WARN: hypatia sim did not produce a complete run — skipping --use-hypatia"
+  fi
+else
+  echo "  tasa-hypatia-ns3:dev image not found — skipping v2 path"
+  echo "  To enable: docker build -f ${ROOT}/docker/hypatia.Dockerfile     -t tasa-hypatia-base:dev ${ROOT}/docker/"
+  echo "             docker build -f ${ROOT}/docker/hypatia-ns3.Dockerfile -t tasa-hypatia-ns3:dev  ${ROOT}/docker/"
+  echo "             then re-run this script"
+fi
 
 echo
 echo "=== Done. Outputs in ${OUT} ==="
